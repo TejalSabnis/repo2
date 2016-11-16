@@ -58,6 +58,35 @@ def rangepartition(ratingstablename, columnname, numberofpartitions, openconnect
                     (ratingstablename, columnname, numberofpartitions, minval, maxval))
         openconnection.commit()
 
+def rangepartition2(ratingstablename, columnname, numberofpartitions, openconnection):
+    if isinstance(numberofpartitions, int) and numberofpartitions > 0:
+        cur = openconnection.cursor();
+        cur.execute("select minvalue from range_metadata;");
+        minval = float(cur.fetchone()[0])
+        cur.execute("select maxvalue from range_metadata;");
+        maxval = float(cur.fetchone()[0])
+        print "max: " +str(maxval)
+        interval = (maxval-minval)/(numberofpartitions)
+        print "interval:" +str(interval)
+        for i in range(0,numberofpartitions):
+            cur.execute("CREATE TABLE "+ratingstablename+"range"+str(i)+" (like "+ratingstablename+");")
+            lowerlimit = minval+i*interval
+            print(lowerlimit)
+            upperlimit = minval+(i+1)*interval
+            print(upperlimit)
+            if i==0:
+                cur.execute("INSERT INTO "+ratingstablename+"range"+str(i)+" "
+                                +"SELECT * FROM "+ratingstablename+" "
+                                +"WHERE "+columnname+" >= "+str(lowerlimit)+" AND "+columnname+" <= "+str(upperlimit))
+                print(i)
+            else:
+                cur.execute("INSERT INTO "+ratingstablename+"range"+str(i)+" "
+                                +"SELECT * FROM "+ratingstablename+" "
+                                +"WHERE "+columnname+" > "+str(lowerlimit)+" AND "+columnname+" <= "+str(upperlimit))
+                print(i)
+        openconnection.commit()
+
+
 def sorttable (tablename, columnname, results, partnum, openconnection):
     cur = openconnection.cursor();
     cur.execute("select * from "+tablename+" order by "+columnname)
@@ -87,9 +116,34 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
             cur.execute("INSERT INTO "+OutputTable+" values "+str(row))
     openconnection.commit()
 
+def jointables (tablename1, columnname1, tablename2, columnname2, results, partnum, openconnection):
+    cur = openconnection.cursor();
+    cur.execute("select * from "+tablename1+" inner join "+tablename2+" on "+tablename1+"."+columnname1+" = "+tablename2+"."+columnname2)
+    results[partnum] = cur.fetchall()
+
 def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, OutputTable, openconnection):
-    #Implement ParallelJoin Here.
-    pass # Remove this once you are done with implementation
+    num = 5
+    rangepartition(InputTable1, Table1JoinColumn, num, openconnection)
+    rangepartition2(InputTable2, Table2JoinColumn, num, openconnection)
+    results = {}
+    jobs = []
+    for i in range(0,num):
+        thread = threading.Thread(target=jointables(InputTable1+"range"+str(i), Table1JoinColumn, InputTable2, Table2JoinColumn, results, i, openconnection))
+        jobs.append(thread)
+    # Start the threads
+    for job in jobs:
+        job.start()
+    # Join the threads
+    for job in jobs:
+        job.join()
+    # Put results in one table
+    cur = openconnection.cursor();
+    cur.execute("create table "+OutputTable+" as select * from "+InputTable1+","+InputTable2+" where false;")
+    for i in range(0,num):
+        rows = results[i]
+        for row in rows:
+            cur.execute("INSERT INTO "+OutputTable+" values "+str(row))
+    openconnection.commit()
 
 
 ################### DO NOT CHANGE ANYTHING BELOW THIS #############################

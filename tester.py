@@ -104,23 +104,22 @@ if __name__ == '__main__':
     con = getOpenConnection();
 
     # Loading two tables ratings and movies
-    loadRatings('ratings', 'ratings.dat', con);
-    loadMovies('movies', 'movies.dat', con);
-
-    # Calling ParallelSort
-    print "Performing Parallel Sort"
-    Assignment3.ParallelSort('ratings', 'Rating', 'parallelSortOutputTable', con);
-    a = raw_input("Check in database and once you are done, press enter to delete all tables: ");
-    deleteTables('ALL', con);
-
-    # Loading two tables ratings and movies
     # loadRatings('ratings', 'ratings.dat', con);
     # loadMovies('movies', 'movies.dat', con);
-    # Calling ParallelJoin
-    # print "Performing Parallel Join"
-    # Assignment3.ParallelJoin('ratings', 'movies', 'MovieId', 'MovieId1', 'parallelJoinOutputTable', con);
+    # Calling ParallelSort
+    # print "Performing Parallel Sort"
+    # Assignment3.ParallelSort('ratings', 'Rating', 'parallelSortOutputTable', con);
     # a = raw_input("Check in database and once you are done, press enter to delete all tables: ");
     # deleteTables('ALL', con);
+
+    # Loading two tables ratings and movies
+    loadRatings('ratings', 'ratings.dat', con);
+    loadMovies('movies', 'movies.dat', con);
+    # Calling ParallelJoin
+    print "Performing Parallel Join"
+    Assignment3.ParallelJoin('ratings', 'movies', 'MovieId', 'MovieId1', 'parallelJoinOutputTable', con);
+    a = raw_input("Check in database and once you are done, press enter to delete all tables: ");
+    deleteTables('ALL', con);
 
     if con:
         con.close()
