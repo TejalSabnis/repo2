@@ -59,11 +59,11 @@ def loadMovies(ratingstablename, ratingsfilepath, openconnection):
 
     cur.execute("DROP TABLE IF EXISTS "+ratingstablename)
 
-    cur.execute("CREATE TABLE "+ratingstablename+" (MovieId1 INT,  Title VARCHAR(100),  Genre VARCHAR(100))")
+    cur.execute("CREATE TABLE "+ratingstablename+" (MovieId INT,  Title VARCHAR(100),  Genre VARCHAR(100))")
     
     loadout = open(ratingsfilepath,'r')
     
-    cur.copy_from(loadout,ratingstablename,sep = '_',columns=('MovieId1','Title','Genre'))
+    cur.copy_from(loadout,ratingstablename,sep = '_',columns=('MovieId','Title','Genre'))
     #cur.execute("ALTER TABLE "+ratingstablename+" DROP COLUMN temp1, DROP COLUMN temp3,DROP COLUMN temp5, DROP COLUMN Timestamp")
     
     cur.close()
@@ -104,20 +104,20 @@ if __name__ == '__main__':
     con = getOpenConnection();
 
     # Loading two tables ratings and movies
-    # loadRatings('ratings', 'ratings.dat', con);
-    # loadMovies('movies', 'movies.dat', con);
+    loadRatings('ratings', 'ratings.dat', con);
+    loadMovies('movies', 'movies.dat', con);
     # Calling ParallelSort
-    # print "Performing Parallel Sort"
-    # Assignment3.ParallelSort('ratings', 'Rating', 'parallelSortOutputTable', con);
-    # a = raw_input("Check in database and once you are done, press enter to delete all tables: ");
-    # deleteTables('ALL', con);
+    print "Performing Parallel Sort"
+    Assignment3.ParallelSort('ratings', 'Rating', 'parallelSortOutputTable', con);
+    a = raw_input("Check in database and once you are done, press enter to delete all tables: ");
+    deleteTables('ALL', con);
 
     # Loading two tables ratings and movies
     loadRatings('ratings', 'ratings.dat', con);
     loadMovies('movies', 'movies.dat', con);
     # Calling ParallelJoin
     print "Performing Parallel Join"
-    Assignment3.ParallelJoin('ratings', 'movies', 'MovieId', 'MovieId1', 'parallelJoinOutputTable', con);
+    Assignment3.ParallelJoin('ratings', 'movies', 'MovieId', 'MovieId', 'parallelJoinOutputTable', con);
     a = raw_input("Check in database and once you are done, press enter to delete all tables: ");
     deleteTables('ALL', con);
 

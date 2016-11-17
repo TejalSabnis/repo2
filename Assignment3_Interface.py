@@ -25,29 +25,27 @@ def rangepartition(ratingstablename, columnname, numberofpartitions, openconnect
         cur.execute("SELECT min("+columnname+") FROM "+ratingstablename+";")
         minval = float(cur.fetchone()[0])
         # minval = 0.0;
-        print "min: " +str(minval)
+        # print "min: " +str(minval)
         cur.execute("SELECT max("+columnname+") FROM "+ratingstablename+";")
         maxval = float(cur.fetchone()[0])
         # maxval = 5.0;
-        print "max: " +str(maxval)
+        # print "max: " +str(maxval)
         interval = (maxval-minval)/(numberofpartitions)
-        print "interval:" +str(interval)
+        # print "interval:" +str(interval)
         for i in range(0,numberofpartitions):
             cur.execute("CREATE TABLE "+ratingstablename+"range"+str(i)+" (like "+ratingstablename+");")
             lowerlimit = minval+i*interval
-            print(lowerlimit)
+            # print(lowerlimit)
             upperlimit = minval+(i+1)*interval
-            print(upperlimit)
+            # print(upperlimit)
             if i==0:
                 cur.execute("INSERT INTO "+ratingstablename+"range"+str(i)+" "
                                 +"SELECT * FROM "+ratingstablename+" "
                                 +"WHERE "+columnname+" >= "+str(lowerlimit)+" AND "+columnname+" <= "+str(upperlimit))
-                print(i)
             else:
                 cur.execute("INSERT INTO "+ratingstablename+"range"+str(i)+" "
                                 +"SELECT * FROM "+ratingstablename+" "
                                 +"WHERE "+columnname+" > "+str(lowerlimit)+" AND "+columnname+" <= "+str(upperlimit))
-                print(i)
         # Create metadata
         cur.execute("select exists(select * from information_schema.tables where table_name=%s)", ("range_metadata",))
         if(not cur.fetchone()[0]):
@@ -65,25 +63,22 @@ def rangepartition2(ratingstablename, columnname, numberofpartitions, openconnec
         minval = float(cur.fetchone()[0])
         cur.execute("select maxvalue from range_metadata;");
         maxval = float(cur.fetchone()[0])
-        print "max: " +str(maxval)
         interval = (maxval-minval)/(numberofpartitions)
-        print "interval:" +str(interval)
+        # print "interval:" +str(interval)
         for i in range(0,numberofpartitions):
             cur.execute("CREATE TABLE "+ratingstablename+"range"+str(i)+" (like "+ratingstablename+");")
             lowerlimit = minval+i*interval
-            print(lowerlimit)
+            # print(lowerlimit)
             upperlimit = minval+(i+1)*interval
-            print(upperlimit)
+            # print(upperlimit)
             if i==0:
                 cur.execute("INSERT INTO "+ratingstablename+"range"+str(i)+" "
                                 +"SELECT * FROM "+ratingstablename+" "
                                 +"WHERE "+columnname+" >= "+str(lowerlimit)+" AND "+columnname+" <= "+str(upperlimit))
-                print(i)
             else:
                 cur.execute("INSERT INTO "+ratingstablename+"range"+str(i)+" "
                                 +"SELECT * FROM "+ratingstablename+" "
                                 +"WHERE "+columnname+" > "+str(lowerlimit)+" AND "+columnname+" <= "+str(upperlimit))
-                print(i)
         openconnection.commit()
 
 
@@ -137,8 +132,20 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
     for job in jobs:
         job.join()
     # Put results in one table
+    colstr1 = ""
+    colstr2 = ""
     cur = openconnection.cursor();
-    cur.execute("create table "+OutputTable+" as select * from "+InputTable1+","+InputTable2+" where false;")
+    cur.execute("select column_name from information_schema.columns where table_name='"+InputTable1+"'")
+    columnnames1 = cur.fetchall()
+    for col in columnnames1:
+        colstr1=colstr1+InputTable1+"_"+col[0]+","
+    cur.execute("select column_name from information_schema.columns where table_name='"+InputTable2+"'")
+    columnnames2 = cur.fetchall()
+    for col in columnnames2:
+        colstr2=colstr2+InputTable2+"_"+col[0]+","
+    allcolstr = colstr1+colstr2[:-1]
+    # print(allcolstr)
+    cur.execute("create table "+OutputTable+" ("+allcolstr+") as select * from "+InputTable1+","+InputTable2+" where false;")
     for i in range(0,num):
         rows = results[i]
         for row in rows:
